@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { getActiveAdminSession } from '@/lib/admin-session';
 
 async function ensureDb() {
     if (!process.env.DATABASE_URL) {
@@ -37,6 +38,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
+        const session = await getActiveAdminSession();
+
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         await ensureDb();
 
         const json = await request.json();

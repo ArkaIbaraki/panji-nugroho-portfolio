@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { getActiveAdminSession } from '@/lib/admin-session';
 
 async function ensureDb() {
     if (!process.env.DATABASE_URL) {
@@ -46,6 +47,12 @@ export async function PUT(request: NextRequest) {
     const id = request.nextUrl.pathname.split('/').pop();
 
     try {
+        const session = await getActiveAdminSession();
+
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         await ensureDb();
         const json = await request.json();
         const project = await prisma.project.update({
@@ -71,6 +78,12 @@ export async function DELETE(request: NextRequest) {
     const id = request.nextUrl.pathname.split('/').pop();
 
     try {
+        const session = await getActiveAdminSession();
+
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         await ensureDb();
         await prisma.project.delete({
             where: {

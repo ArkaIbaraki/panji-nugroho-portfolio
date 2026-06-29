@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
                     }
                 });
 
-                if (!user) {
+                if (!user || !user.isActive) {
                     return null;
                 }
 

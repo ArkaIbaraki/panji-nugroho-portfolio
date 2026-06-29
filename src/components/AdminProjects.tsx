@@ -17,6 +17,7 @@ type Project = {
 export default function AdminProjects({ projects: initialProjects }: { projects: Project[] }) {
     const [projects, setProjects] = useState<Project[]>(initialProjects);
     const [isCreating, setIsCreating] = useState(false);
+    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [newProject, setNewProject] = useState({
         title: '',
         description: '',
@@ -28,6 +29,41 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+
+    const emptyProjectForm = {
+        title: '',
+        description: '',
+        imageUrl: '',
+        liveUrl: '',
+        githubUrl: '',
+        tags: '',
+    };
+
+    const resetForm = () => {
+        setIsCreating(false);
+        setEditingProjectId(null);
+        setNewProject(emptyProjectForm);
+    };
+
+    const startCreate = () => {
+        setEditingProjectId(null);
+        setNewProject(emptyProjectForm);
+        setIsCreating(true);
+    };
+
+    const startEdit = (project: Project) => {
+        setEditingProjectId(project.id);
+        setNewProject({
+            title: project.title,
+            description: project.description,
+            imageUrl: project.imageUrl,
+            liveUrl: project.liveUrl ?? '',
+            githubUrl: project.githubUrl ?? '',
+            tags: JSON.parse(project.tags).join(', '),
+        });
+        setIsCreating(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
@@ -57,33 +93,35 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/projects', {
-                method: 'POST',
+            const payload = {
+                ...newProject,
+                tags: JSON.stringify(
+                    newProject.tags
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(Boolean),
+                ),
+            };
+
+            const response = await fetch(editingProjectId ? `/api/projects/${editingProjectId}` : '/api/projects', {
+                method: editingProjectId ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...newProject,
-                    tags: JSON.stringify(newProject.tags.split(',').map(tag => tag.trim())),
-                }),
+                body: JSON.stringify(payload),
             });
 
-            if (!response.ok) throw new Error('Failed to create project');
+            if (!response.ok) throw new Error(editingProjectId ? 'Failed to update project' : 'Failed to create project');
 
             const project = await response.json();
-            setProjects([project, ...projects]);
-            setIsCreating(false);
-            setNewProject({
-                title: '',
-                description: '',
-                imageUrl: '',
-                liveUrl: '',
-                githubUrl: '',
-                tags: '',
-            });
+            setProjects(editingProjectId
+                ? projects.map(existingProject => existingProject.id === editingProjectId ? project : existingProject)
+                : [project, ...projects]
+            );
+            resetForm();
             router.refresh();
         } catch (error) {
-            console.error('Failed to create project:', error);
+            console.error(editingProjectId ? 'Failed to update project:' : 'Failed to create project:', error);
         }
     };
 
@@ -112,7 +150,7 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
         <div className="w-full px-4 sm:px-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
-                    onClick={() => setIsCreating(true)}
+                    onClick={startCreate}
                     className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     Add New Project
@@ -127,6 +165,20 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
 
             {isCreating && (
                 <form onSubmit={handleCreate} className="mb-8 space-y-4 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md">
+                    <div className="flex items-center justify-between gap-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {editingProjectId ? 'Edit Project' : 'Create Project'}
+                        </h3>
+                        {editingProjectId && (
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                            >
+                                Cancel edit
+                            </button>
+                        )}
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Title
@@ -207,11 +259,11 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
                             disabled={uploading}
                             className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
                         >
-                            Create Project
+                            {editingProjectId ? 'Update Project' : 'Create Project'}
                         </button>
                         <button
                             type="button"
-                            onClick={() => setIsCreating(false)}
+                            onClick={resetForm}
                             className="w-full sm:w-auto bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
                         >
                             Cancel
@@ -272,6 +324,12 @@ export default function AdminProjects({ projects: initialProjects }: { projects:
                                 className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
                             >
                                 Delete
+                            </button>
+                            <button
+                                onClick={() => startEdit(project)}
+                                className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
+                            >
+                                Edit
                             </button>
                         </div>
                     </div>
