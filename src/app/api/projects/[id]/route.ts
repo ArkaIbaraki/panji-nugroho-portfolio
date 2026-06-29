@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
 async function ensureDb() {
@@ -53,6 +54,9 @@ export async function PUT(request: NextRequest) {
             },
             data: json,
         });
+
+        revalidatePath('/');
+        revalidatePath('/admin');
         return NextResponse.json(project);
     } catch (error) {
         console.error('Failed to update project:', error);
@@ -73,6 +77,9 @@ export async function DELETE(request: NextRequest) {
                 id,
             },
         });
+
+        revalidatePath('/');
+        revalidatePath('/admin');
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (error) {
         console.error('Failed to delete project:', error);

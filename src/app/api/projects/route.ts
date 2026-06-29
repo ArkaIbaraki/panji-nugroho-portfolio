@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
 async function ensureDb() {
@@ -70,6 +71,9 @@ export async function POST(request: NextRequest) {
                 featured: json.featured || false
             },
         });
+
+        revalidatePath('/');
+        revalidatePath('/admin');
 
         return NextResponse.json(project);
     } catch (error) {

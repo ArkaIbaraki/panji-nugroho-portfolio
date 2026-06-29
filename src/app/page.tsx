@@ -5,6 +5,8 @@ import Skills from '@/components/Skills';
 import About from '@/components/About';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 async function getProjects() {
   const projects = await prisma.project.findMany({
     orderBy: {
@@ -24,6 +26,6 @@ export default async function Home() {
       <About />
       <Skills />
       <Projects projects={projects} />
-      </main>
+    </main>
   );
 }

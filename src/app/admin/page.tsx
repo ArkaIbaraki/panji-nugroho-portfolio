@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import AdminProjects from '@/components/AdminProjects';
 
+export const dynamic = 'force-dynamic';
+
 async function getProjects() {
     const projects = await prisma.project.findMany({
         orderBy: {
