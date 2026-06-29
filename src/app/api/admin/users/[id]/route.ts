@@ -3,14 +3,14 @@ import { hash } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { getActiveAdminSession } from '@/lib/admin-session';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getActiveAdminSession();
 
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const json = await request.json();
 
     const data: {
