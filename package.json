@@ -19,7 +19,7 @@
     "@vercel/blob": "^1.1.1",
     "bcryptjs": "^3.0.2",
     "framer-motion": "^12.12.2",
-    "next": "^15.3.3",
+    "next": "15.3.8",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
